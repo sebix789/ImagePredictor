@@ -6,3 +6,4 @@ numpy
 python-dotenv
 keras
 matplotlib
+flask-cors
