@@ -1,42 +1,76 @@
 from flask import Flask, request, jsonify
-from model import load_model
-from database import save_perdiction, get_all_predictions
+from flask_cors import CORS
+from model.model import load_model
+from database import save_prediction, get_all_predictions
 from PIL import Image
 import numpy as np
-import os
+import json
+import base64
+import io
 
 
 app = Flask(__name__)
+CORS(app)
 model = load_model()
+
+with open('categories.json') as f:
+    categories = json.load(f)
+
+@app.route('/')
+def index():
+    return "Welcome to the Image Classification API"
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    # get files from client
-    file = file.request['file']
-    img = Image.open(file).resize((32, 32))
-    
-    # convert image to numpy array
-    img_array = np.array(img) / 255.0
-    img_array = img_array.reshape(1, 32, 32, 3)
-    
-    
-    # start prediction
-    prediction = model.predict(img_array)
-    predicted_class = np.argmax(prediction)
-    
-    
-    # save prediction to database
-    save_perdiction(file.filename, int(predicted_class))
+    if 'file' not in request.files:
+        return jsonify({"error": "No file part"}), 400
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"error": "No selected file"}), 400
+    if file:        
+        # Open the image file
+        img = Image.open(file).convert('RGB').resize((32, 32))
+        # original_width, original_height = img.size
+        # img = img.resize((32, 32))
+        
+        # Convert image to numpy array
+        img_array = np.array(img) / 255.0
+        img_array = img_array.reshape(1, 32, 32, 3)
+        
+        # Start prediction
+        prediction = model.predict(img_array)
+        predicted_class = np.argmax(prediction)
+        
+        predicted_category = categories[str(predicted_class)]
+        
+        # Detect image format and convert to base64 string
+        # mimetype = file.mimetype
+        # if mimetype == 'image/jpeg' or mimetype == 'image/jpg':
+        #     image_format = 'JPEG'
+        # elif mimetype == 'image/png':
+        #     image_format = 'PNG'
+        # else:
+        #     return jsonify({"error": "Unsupported image format"}), 400
+        
+        # buffered = io.BytesIO()
+        # img.save(buffered, format=image_format)
+        # img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
+        
+        # Save prediction to database
+        save_prediction(file.filename, predicted_category)
+        
+        return jsonify({'image_name': file.filename, 'prediction': predicted_category})
     
  
 @app.route('/history', methods=['GET'])
 def history():
-    predictions = get_all_predictions()
-    return jsonify({'prediction': predictions})
+    try:
+        predictions = get_all_predictions()
+        return jsonify({'predictions': predictions})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 if __name__ == '__main__':
     app.run(debug=True)
-    
-    print('Server is runnig on port: 5000')
     
