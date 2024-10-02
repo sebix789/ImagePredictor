@@ -1,5 +1,6 @@
 import tensorflow as tf
 import matplotlib.pyplot as plt
+import os
 
 def build_model():
     model = tf.keras.models.Sequential([
@@ -28,8 +29,12 @@ def train_model():
     
     return model, history, x_test, y_test
 
-def load_model():
-    model = tf.keras.models.load_model('cifar_model.h5')
+def load_model():   
+    model_path = os.path.join(os.path.dirname(__file__), 'cifar_model.h5')
+    if not os.path.exists(model_path):
+        raise FileNotFoundError(f"The model file {model_path} does not exist.")
+    
+    model = tf.keras.models.load_model(model_path)
     return model
 
 def plot_history(history):
