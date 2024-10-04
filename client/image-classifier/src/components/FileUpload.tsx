@@ -1,14 +1,25 @@
-import React, { useState } from "react";
+import React, { useState, ChangeEvent } from "react";
 import axios from "axios";
 import { Button, Typography, CircularProgress, Box } from "@mui/material";
 
-const FileUpload = () => {
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [prediction, setPrediction] = useState(null);
-  const [error, setError] = useState(null);
+const FileUpload: React.FC = () => {
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [prediction, setPrediction] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files.length > 0) {
+      setSelectedFile(event.target.files[0]);
+    }
+  };
 
   const handleUploadFile = async () => {
+    if (!selectedFile) {
+      setError("Please select a file first.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
     const formData = new FormData();
@@ -18,7 +29,7 @@ const FileUpload = () => {
       const res = await axios.post("http://127.0.0.1:5000/predict", formData);
       setPrediction(res.data.prediction);
       setLoading(false);
-    } catch (error) {
+    } catch (error: any) {
       setError(error.message);
       setLoading(false);
     }
@@ -34,7 +45,7 @@ const FileUpload = () => {
         style={{ display: "none" }}
         id="raised-button-file"
         type="file"
-        onChange={(e) => setSelectedFile(e.target.files[0])}
+        onChange={handleFileChange}
       />
       <Box
         sx={{

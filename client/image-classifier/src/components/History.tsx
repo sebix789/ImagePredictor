@@ -8,14 +8,21 @@ import {
   Box,
   Button,
 } from "@mui/material";
+import Prediction from "../types/Prediction";
+import HistoryProps from '../props/HistoryProps';
 
-const History = ({ onHide }) => {
-  const [history, setHistory] = useState([]);
+const History: React.FC<HistoryProps> = ({ onHide }) => {
+  const [history, setHistory] = useState<Prediction[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchHistory = async () => {
-      const res = await axios.get("http://127.0.0.1:5000/history");
-      setHistory(res.data.predictions);
+      try {
+        const res = await axios.get("http://127.0.0.1:5000/history");
+        setHistory(res.data.predictions);
+      } catch (error: any) {
+        setError(error.response ? error.response.data.error : error.message);
+      }
     };
 
     fetchHistory();
@@ -34,8 +41,14 @@ const History = ({ onHide }) => {
       >
         Hide Prediction History
       </Button>
+      {error && (
+        <Typography variant="body1" color="error">
+          {error}
+        </Typography>
+      )}
       <Grid container spacing={2}>
         {history.map((entry, index) => (
+          // @ts-ignore
           <Grid item xs={12} md={6} lg={4} key={index}>
             <Card variant="outlined">
               <CardContent>
