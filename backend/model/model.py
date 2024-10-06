@@ -99,7 +99,7 @@ def load_data():
     
     return train_data, test_data
 
-
+### Training configuration for Kaggle ###
 def train_model(): 
     # Load the data
     train_data, test_data = load_data()    
@@ -177,3 +177,44 @@ if __name__ == '__main__':
     score = model.evaluate(test_data, verbose=0)
     print('Test loss:', score[0])
     print('Test accuracy:', score[1])
+    
+    
+### If you plan to use TPU for trainings use this instead ###
+# def train_model_with_TPU():
+#     # Initialize TPU strategy
+#     resolver = tf.distribute.cluster_resolver.TPUClusterResolver(tpu='')
+#     tf.config.experimental_connect_to_cluster(resolver)
+#     tf.tpu.experimental.initialize_tpu_system(resolver)
+#     strategy = tf.distribute.TPUStrategy(resolver)
+    
+#     with strategy.scope():
+#         # Load the data
+#         train_data, test_data = load_data()
+        
+#         # Model file path for saving
+#         model_file_path = '/kaggle/working/classification_sequential_model.keras'
+        
+#         # Load or build the model
+#         if os.path.exists(model_file_path):
+#             print("Loading existing model...")
+#             model = tf.keras.models.load_model(model_file_path)
+#         else:
+#             print("Building new model...")
+#             model = build_model((224, 224, 3))
+        
+#         # Callbacks
+#         early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=3, restore_best_weights=True)
+#         model_checkpoint = tf.keras.callbacks.ModelCheckpoint('/kaggle/working/best_model.keras', save_best_only=True, monitor='val_loss', mode='min')
+#         lr_scheduler = tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=2, min_lr=1e-6)
+
+#         # Train the model
+#         history = model.fit(
+#             train_data, epochs=50, 
+#             validation_data=test_data, 
+#             callbacks=[early_stopping, model_checkpoint, lr_scheduler]
+#         )
+
+#         # Save the final model
+#         model.save(model_file_path)
+        
+#     return model, history, test_data
