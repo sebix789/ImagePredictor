@@ -1,5 +1,6 @@
 flask
 tensorflow
+tensorflow-addons
 pillow>=8.3.2
 pymongo
 numpy
@@ -7,3 +8,4 @@ python-dotenv
 keras
 matplotlib
 flask-cors
+tensorflow-datasets
