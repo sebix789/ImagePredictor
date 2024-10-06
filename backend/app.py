@@ -4,6 +4,7 @@ from model.model import load_model
 from database import save_prediction, get_all_predictions
 from PIL import Image
 import numpy as np
+import tensorflow as tf
 import json
 import base64
 import io
@@ -29,21 +30,20 @@ def predict():
         return jsonify({"error": "No selected file"}), 400
     if file:        
         # Open the image file
-        img = Image.open(file).convert('RGB').resize((32, 32))
+        img = Image.open(file).convert('RGB').resize((224, 224))
         # original_width, original_height = img.size
         # img = img.resize((32, 32))
         
         # Convert image to numpy array
         img_array = np.array(img) / 255.0
-        img_array = img_array.reshape(1, 32, 32, 3)
+        img_array = img_array.reshape(1, 224, 224, 3)
         
         # Start prediction
         prediction = model.predict(img_array)
-        predicted_class = np.argmax(prediction)
+        predict_class = np.argmax(prediction, axis=1)[0]
+        predicted_breed = categories[str(predict_class)]
         
-        predicted_category = categories[str(predicted_class)]
-        
-        # Detect image format and convert to base64 string
+        ### Detect image format and convert to base64 string ###
         # mimetype = file.mimetype
         # if mimetype == 'image/jpeg' or mimetype == 'image/jpg':
         #     image_format = 'JPEG'
@@ -57,9 +57,9 @@ def predict():
         # img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
         
         # Save prediction to database
-        save_prediction(file.filename, predicted_category)
+        save_prediction(file.filename, predicted_breed)
         
-        return jsonify({'image_name': file.filename, 'prediction': predicted_category})
+        return jsonify({'image_name': file.filename, 'prediction': predicted_breed})
     
  
 @app.route('/history', methods=['GET'])
