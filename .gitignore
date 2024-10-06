@@ -8,6 +8,9 @@ venv/
 env/
 backend/venv/
 
+# Model Files
+*.keras
+
 # Ignore model files
 cifar_model.h5
 
