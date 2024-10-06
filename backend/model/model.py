@@ -179,13 +179,33 @@ if __name__ == '__main__':
     print('Test accuracy:', score[1])
     
     
+
+#############################################################    
 ### If you plan to use TPU for trainings use this instead ###
+# def load_data_with_TPU():
+#     (train_data, test_data) = tfds.load(
+#         'stanford_dogs',
+#         split=['train', 'test'],
+#         shuffle_files=True,
+#         as_supervised=True,
+#         with_info=True
+#     )
+    
+#     train_data = train_data.map(lambda img, lbl: preprocess_image(img, lbl, is_training=True))
+#     test_data = test_data.map(lambda img, lbl: preprocess_image(img, lbl, is_training=False))
+    
+    
+#     train_data = train_data.batch(128)
+#     test_data = test_data.batch(128)
+    
+#     return train_data, test_data
+#############################################################
+#############################################################
 # def train_model_with_TPU():
 #     # Initialize TPU strategy
-#     resolver = tf.distribute.cluster_resolver.TPUClusterResolver(tpu='')
-#     tf.config.experimental_connect_to_cluster(resolver)
-#     tf.tpu.experimental.initialize_tpu_system(resolver)
-#     strategy = tf.distribute.TPUStrategy(resolver)
+#     tpu = tf.distribute.cluster_resolver.TPUClusterResolver()
+#     tf.tpu.experimental.initialize_tpu_system(tpu)
+#     strategy = tf.distribute.TPUStrategy(tpu)
     
 #     with strategy.scope():
 #         # Load the data
@@ -209,12 +229,13 @@ if __name__ == '__main__':
 
 #         # Train the model
 #         history = model.fit(
-#             train_data, epochs=50, 
+#             train_data, 
+#             epochs=50, 
 #             validation_data=test_data, 
 #             callbacks=[early_stopping, model_checkpoint, lr_scheduler]
 #         )
 
-#         # Save the final model
-#         model.save(model_file_path)
+#     # Save the final model
+#     model.save(model_file_path)
         
 #     return model, history, test_data
