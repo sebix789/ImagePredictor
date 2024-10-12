@@ -3,46 +3,24 @@ import tensorflow_addons as tfa
 import tensorflow_datasets as tfds
 import matplotlib.pyplot as plt
 import os
-from warmup import WarmupScheduler
+import random
 
 
 # Build the model
 def build_model():
-    # Build the model
+    # Transer Learning Implementation
+    base_model = tf.keras.applications.InceptionV3(input_shape=(224, 224, 3), include_top=False, weights='imagenet')
+    base_model.trainable = False
+    
     model = tf.keras.models.Sequential([
-        # Convolutional layers
-        tf.keras.layers.Input(shape=(224, 224, 3)),
-        tf.keras.layers.Conv2D(32, (3, 3), padding='same', activation=None),
-        tf.keras.layers.BatchNormalization(),
-        tf.keras.layers.Activation('swish'),
-        tf.keras.layers.MaxPooling2D((2, 2)),
-        
-        tf.keras.layers.Conv2D(32, (3, 3), padding='same', activation=None),
-        tf.keras.layers.BatchNormalization(),
-        tf.keras.layers.Activation('swish'),
-        tf.keras.layers.MaxPooling2D((2, 2)),
-        
-        tf.keras.layers.Conv2D(64, (3, 3), padding='same', activation=None),
-        tf.keras.layers.BatchNormalization(),
-        tf.keras.layers.Activation('swish'),
-        tf.keras.layers.MaxPooling2D((2, 2)),
-        
-        tf.keras.layers.Conv2D(64, (3, 3), padding='same', activation=None),
-        tf.keras.layers.BatchNormalization(),
-        tf.keras.layers.Activation('swish'),
-        tf.keras.layers.MaxPooling2D((2, 2)),
-        
-        tf.keras.layers.Conv2D(128, (3, 3), padding='same', activation=None),
-        tf.keras.layers.BatchNormalization(),
-        tf.keras.layers.Activation('swish'),
-        tf.keras.layers.MaxPooling2D((2, 2)),
-        
+        #Base model
+        base_model,
         
         # Dense layers
         tf.keras.layers.GlobalAveragePooling2D(),
-        tf.keras.layers.Dense(128, activation='swish', kernel_regularizer=tf.keras.regularizers.l2(0.001)),
+        tf.keras.layers.Dense(512, activation='relu'),
         tf.keras.layers.Dropout(0.4),
-        tf.keras.layers.Dense(64, activation='swish', kernel_regularizer=tf.keras.regularizers.l2(0.001)),
+        tf.keras.layers.Dense(512, activation='relu'),
         tf.keras.layers.Dropout(0.4),
         tf.keras.layers.Dense(120, activation='softmax')
     ])
@@ -50,16 +28,31 @@ def build_model():
     return model
 
 
+# Preprocess Image
 def preprocess_image(image, label, is_training=True):
     image = tf.image.resize(image, (224, 224))
     
     # Data Augmentation
     if is_training:
         image = tf.image.random_flip_left_right(image)
-        image = tf.image.random_brightness(image, max_delta=0.1)
+        image = tf.image.random_brightness(image, max_delta=0.05)
+        image = tf.image.random_contrast(image, lower=0.95, upper=1.05)
+        image = tf.image.random_saturation(image, lower=0.95, upper=1.05)
+        
+        # Random Zoom Simulation
+        zoom_factor = tf.random.uniform([], minval=0.9, maxval=1.1)
+        new_size = tf.cast(tf.shape(image)[0:2], tf.float32) * zoom_factor
+        image = tf.image.resize(image, tf.cast(new_size, tf.int32))
+        image = tf.image.resize_with_crop_or_pad(image, 224, 224)
+        
+        # Rotation
+        rotations = random.choice([0, 1])
+        image = tf.image.rot90(image, k=rotations)
+        
     image = image / 255.0
     label = tf.one_hot(label, 120)
     return image, label
+
 
 # Load dataset
 def load_data():
@@ -69,26 +62,53 @@ def load_data():
     test_data = data['test'].map(lambda img, lbl: preprocess_image(img, lbl, is_training=False))
     
     
-    train_data = train_data.shuffle(1024).batch(32).prefetch(tf.data.AUTOTUNE)
-    test_data = test_data.batch(32).prefetch(tf.data.AUTOTUNE)
+    train_data = train_data.shuffle(1024).batch(64).prefetch(tf.data.AUTOTUNE)
+    test_data = test_data.batch(64).prefetch(tf.data.AUTOTUNE)
     
     return train_data, test_data
 
+
+# Fine-Tunning for transfer learning
+def fine_tunning(model, train_data, test_data):
+    
+    weights_file_path = '/kaggle/working/weights.keras'
+    
+    base_model = model.layers[0]
+    base_model.trainable = True
+    
+    for layer in base_model.layers[-20:]:
+        layer.trainable = True
+        
+    optimizer = tf.keras.optimizers.Nadam(learning_rate=1e-5)
+    model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
+    
+    # Callbacks
+    early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
+    model_checkpoint = tf.keras.callbacks.ModelCheckpoint(weights_file_path, save_best_only=True, monitor='val_loss', mode='min')
+    lr_scheduler = tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=3, min_lr=1e-7)
+    
+    fine_tune_history = model.fit(
+        train_data, epochs=30, 
+        validation_data=test_data, 
+        callbacks=[early_stopping, model_checkpoint, lr_scheduler]
+    )
+    
+    return fine_tune_history
+
 ### Training configuration for Kaggle ###
 def train_model(): 
-    # Load the data
-    train_data, test_data = load_data()    
+    train_data, test_data = load_data()
     
-    # Model path
+    # model_load_path = '/kaggle/input/breed-model-with-weights/classification_sequential_model.keras'
+    # weights_load_path = '/kaggle/input/breed-model-with-weights/weights.keras'
+    
     model_file_path = '/kaggle/working/classification_sequential_model.keras'
-    
-    # Weights path
     weights_file_path = '/kaggle/working/weights.keras'
 
     # Load or build the model
     if os.path.exists(model_file_path):
         print("Loading existing model...")
-        model = tf.keras.models.load_model(model_file_path)
+        model = tf.keras.models.load_model(weights_file_path)
         optimizer = tf.keras.optimizers.Nadam(learning_rate=0.001)
         model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
     else:
@@ -110,19 +130,28 @@ def train_model():
     # Callbacks
     early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
     model_checkpoint = tf.keras.callbacks.ModelCheckpoint(weights_file_path, save_best_only=True, monitor='val_loss', mode='min')
-    lr_scheduler = tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=3, min_lr=1e-6)
+    lr_scheduler = tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=3, min_lr=1e-5)
 
     # Train the model
     history = model.fit(
-        train_data, epochs=20, 
+        train_data, epochs=15, 
         validation_data=test_data, 
         callbacks=[early_stopping, model_checkpoint, lr_scheduler]
     )
+    
+    print("Fine-Tunning applying...")
+    fine_tune_history = fine_tunning(model, train_data, test_data)
 
-    # Save the final model
     model.save(model_file_path)
     
+    
+    for key in fine_tune_history.history:
+        history.history[key] += fine_tune_history.history[key]
+        
+        
     return model, history, test_data
+
+
 def load_model():   
     model_path = os.path.join(os.path.dirname(__file__), 'classification_sequential_model.keras')
     if not os.path.exists(model_path):
