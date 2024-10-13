@@ -2,20 +2,17 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from model.model import load_model
 from database import save_prediction, get_all_predictions
+from utilities.label_formatter import format_breeds
 from PIL import Image
 import numpy as np
-import tensorflow as tf
-import json
-import base64
-import io
-
+import tensorflow_datasets as tfds
 
 app = Flask(__name__)
 CORS(app)
 model = load_model()
 
-with open('categories.json') as f:
-    categories = json.load(f)
+datasets, info = tfds.load('stanford_dogs', with_info=True)
+labels = info.features['label'].names
 
 @app.route('/')
 def index():
@@ -41,7 +38,8 @@ def predict():
         # Start prediction
         prediction = model.predict(img_array)
         predict_class = np.argmax(prediction, axis=1)[0]
-        predicted_breed = categories[str(predict_class)]
+        predicted_breed = labels[predict_class]
+        formatted_breed = format_breeds(predicted_breed)
         
         ### Detect image format and convert to base64 string ###
         # mimetype = file.mimetype
@@ -57,9 +55,9 @@ def predict():
         # img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
         
         # Save prediction to database
-        save_prediction(file.filename, predicted_breed)
+        save_prediction(file.filename, formatted_breed)
         
-        return jsonify({'image_name': file.filename, 'prediction': predicted_breed})
+        return jsonify({'image_name': file.filename, 'prediction': formatted_breed})
     
  
 @app.route('/history', methods=['GET'])
