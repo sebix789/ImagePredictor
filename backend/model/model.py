@@ -1,5 +1,4 @@
 import tensorflow as tf
-import tensorflow_addons as tfa
 import tensorflow_datasets as tfds
 import matplotlib.pyplot as plt
 import os
