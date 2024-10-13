@@ -11,9 +11,6 @@ backend/venv/
 # Model Files
 *.keras
 
-# Ignore model files
-cifar_model.h5
-
 # Python cache files
 __pycache__/
 *.py[cod]
