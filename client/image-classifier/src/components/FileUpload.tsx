@@ -1,5 +1,6 @@
 import React, { useState, ChangeEvent } from "react";
 import axios from "axios";
+import Feedback from "./Feedback";
 import { Button, Typography, CircularProgress, Box } from "@mui/material";
 
 const FileUpload: React.FC = () => {
@@ -53,6 +54,7 @@ const FileUpload: React.FC = () => {
           justifyContent: "center",
           gap: "10px",
           marginBottom: "20px",
+          marginTop: "20px",
         }}
       >
         <label htmlFor="raised-button-file">
@@ -86,6 +88,9 @@ const FileUpload: React.FC = () => {
             {prediction}
           </Typography>
         </Typography>
+      )}
+      {prediction && selectedFile && (
+        <Feedback imageName={selectedFile.name} prediction={prediction} />
       )}
     </Box>
   );
