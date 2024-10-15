@@ -1,11 +1,12 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from model.model import load_model
-from database import save_prediction, get_all_predictions
+from database import save_prediction, get_all_predictions, update_feedback
 from utilities.label_formatter import format_breeds
 from PIL import Image
 import numpy as np
 import tensorflow_datasets as tfds
+import io
 
 app = Flask(__name__)
 CORS(app)
@@ -28,8 +29,6 @@ def predict():
     if file:        
         # Open the image file
         img = Image.open(file).convert('RGB').resize((224, 224))
-        # original_width, original_height = img.size
-        # img = img.resize((32, 32))
         
         # Convert image to numpy array
         img_array = np.array(img) / 255.0
@@ -41,23 +40,44 @@ def predict():
         predicted_breed = labels[predict_class]
         formatted_breed = format_breeds(predicted_breed)
         
-        ### Detect image format and convert to base64 string ###
-        # mimetype = file.mimetype
-        # if mimetype == 'image/jpeg' or mimetype == 'image/jpg':
-        #     image_format = 'JPEG'
-        # elif mimetype == 'image/png':
-        #     image_format = 'PNG'
-        # else:
-        #     return jsonify({"error": "Unsupported image format"}), 400
-        
-        # buffered = io.BytesIO()
-        # img.save(buffered, format=image_format)
-        # img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
+        ### Save Image to DB ###
+        img_io = io.BytesIO()
+    
+        if file.mimetype == 'image/jpeg' or file.mimetype == 'image/jpg':
+            image_format = 'JPEG'
+        elif file.mimetype == 'image/png':
+            image_format = 'PNG'
+        else:
+            return jsonify({"error": "Invalid image format"}), 400
+
+        img.save(img_io, format=image_format)
+        img_io.seek(0)
         
         # Save prediction to database
-        save_prediction(file.filename, formatted_breed)
+        save_prediction(image_name=file.filename, prediction=formatted_breed, image_data=img_io.read())
         
         return jsonify({'image_name': file.filename, 'prediction': formatted_breed})
+
+
+@app.route('/feedback', methods=['POST'])
+def feedback():
+    data = request.get_json()
+    image_name = data.get('image_name')
+    is_correct = data.get('is_correct')
+    true_label = data.get('true_label')
+    
+    update_feedback(image_name, is_correct, true_label)
+    
+    return jsonify({'status': 'Feedback received'})
+
+
+@app.route('/labels', methods=['GET'])
+def get_label():
+    try:
+        formatted_labels = [format_breeds(label) for label in labels]
+        return jsonify({'labels': labels, 'formatted_labels': formatted_labels})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
     
  
 @app.route('/history', methods=['GET'])

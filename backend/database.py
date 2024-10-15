@@ -1,4 +1,5 @@
 from pymongo import MongoClient
+from gridfs import GridFS
 from dotenv import load_dotenv
 import os
 
@@ -10,15 +11,18 @@ def connect():
     db = client["image_predictor"]
     return db
 
-def save_prediction(image_name, prediction):
+def save_prediction(image_name, prediction, image_data):
     db = connect()
+    fs = GridFS(db)
+    image_id = fs.put(image_data, filename=image_name)
+    
     collection = db["predictions"]
     collection.insert_one({
         "image_name": image_name,
         "prediction": prediction,
-        # "image_data": image_data,
-        # "original_width": original_width,
-        # "original_height": original_height
+        "image_id": image_id,
+        "is_correct": None,
+        "true_label": None
     })
     
 def get_all_predictions():
@@ -28,3 +32,12 @@ def get_all_predictions():
     for prediction in predictions:
         prediction["_id"] = str(prediction["_id"])
     return predictions
+
+def update_feedback(image_name, is_correct, true_label=None):
+    db = connect()
+    collection = db["predictions"]
+    
+    collection.update_one(
+        {"image_name": image_name},
+        {"$set": {"is_correct": is_correct, "true_label": true_label}}
+    )
