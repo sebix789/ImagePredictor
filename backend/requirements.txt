@@ -1,6 +1,6 @@
 flask
 tensorflow
-pillow>=8.3.2
+pillow
 pymongo
 numpy
 python-dotenv
