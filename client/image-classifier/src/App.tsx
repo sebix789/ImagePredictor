@@ -1,6 +1,6 @@
-import React, { useState } from "react";
-import FileUpload from "./components/FileUpload";
-import History from "./components/History";
+import React, { useState } from 'react';
+import FileUpload from './components/FileUpload';
+import History from './components/History';
 import {
   Container,
   Typography,
@@ -8,7 +8,7 @@ import {
   Button,
   createTheme,
   ThemeProvider,
-} from "@mui/material";
+} from '@mui/material';
 
 const theme = createTheme();
 
@@ -18,7 +18,7 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <Container>
-        <Box sx={{ textAlign: "center", marginTop: "40px" }}>
+        <Box sx={{ textAlign: 'center', marginTop: '40px' }}>
           <Typography variant="h3" gutterBottom>
             Image Classification
           </Typography>
@@ -27,7 +27,7 @@ function App() {
             variant="contained"
             color="secondary"
             onClick={() => setShowHistory(true)}
-            sx={{ marginTop: "20px" }}
+            sx={{ marginTop: '20px' }}
           >
             Show Prediction History
           </Button>

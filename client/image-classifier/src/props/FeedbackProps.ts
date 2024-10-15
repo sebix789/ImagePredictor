@@ -1,4 +1,4 @@
 export default interface FeedbackProps {
-    imageName: string,
-    prediction: string,
-  }
+  imageName: string;
+  prediction: string;
+}

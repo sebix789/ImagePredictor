@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import {
   Card,
   CardContent,
@@ -7,8 +7,8 @@ import {
   Grid2 as Grid,
   Box,
   Button,
-} from "@mui/material";
-import Prediction from "../types/Prediction";
+} from '@mui/material';
+import Prediction from '../types/Prediction';
 import HistoryProps from '../props/HistoryProps';
 
 const History: React.FC<HistoryProps> = ({ onHide }) => {
@@ -18,7 +18,7 @@ const History: React.FC<HistoryProps> = ({ onHide }) => {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const res = await axios.get("http://127.0.0.1:5000/history");
+        const res = await axios.get('http://127.0.0.1:5000/history');
         setHistory(res.data.predictions);
       } catch (error: any) {
         setError(error.response ? error.response.data.error : error.message);
@@ -29,7 +29,7 @@ const History: React.FC<HistoryProps> = ({ onHide }) => {
   }, []);
 
   return (
-    <Box sx={{ marginTop: "20px" }}>
+    <Box sx={{ marginTop: '20px' }}>
       <Typography variant="h5" gutterBottom>
         Prediction History
       </Typography>
@@ -37,7 +37,7 @@ const History: React.FC<HistoryProps> = ({ onHide }) => {
         variant="contained"
         color="secondary"
         onClick={onHide}
-        sx={{ marginBottom: "20px" }}
+        sx={{ marginBottom: '20px' }}
       >
         Hide Prediction History
       </Button>
