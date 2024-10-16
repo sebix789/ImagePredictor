@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import FileUpload from './components/FileUpload';
 import History from './components/History';
+import AutoFeedback from './components/AutoFeedback';
 import {
   Container,
   Typography,
@@ -32,6 +33,7 @@ function App() {
             Show Prediction History
           </Button>
           {showHistory && <History onHide={() => setShowHistory(false)} />}
+          <AutoFeedback />
         </Box>
       </Container>
     </ThemeProvider>
