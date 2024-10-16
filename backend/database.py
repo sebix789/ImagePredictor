@@ -11,7 +11,7 @@ def connect():
     db = client["image_predictor"]
     return db
 
-def save_prediction(image_name, prediction, image_data):
+def save_prediction(image_name, prediction, image_data, is_correct=None, true_label=None):
     db = connect()
     fs = GridFS(db)
     image_id = fs.put(image_data, filename=image_name)
@@ -21,8 +21,8 @@ def save_prediction(image_name, prediction, image_data):
         "image_name": image_name,
         "prediction": prediction,
         "image_id": image_id,
-        "is_correct": None,
-        "true_label": None
+        "is_correct": is_correct,
+        "true_label": true_label
     })
     
 def get_all_predictions():

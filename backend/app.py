@@ -3,11 +3,16 @@ from flask_cors import CORS
 from model.model import load_model
 from database import save_prediction, get_all_predictions, update_feedback
 from utilities.label_formatter import format_breeds
+from dotenv import load_dotenv
 from PIL import Image
 import numpy as np
 import tensorflow_datasets as tfds
 import io
+import os
+import re
 
+
+load_dotenv()
 app = Flask(__name__)
 CORS(app)
 model = load_model()
@@ -54,7 +59,7 @@ def predict():
         img_io.seek(0)
         
         # Save prediction to database
-        save_prediction(image_name=file.filename, prediction=formatted_breed, image_data=img_io.read())
+        save_prediction(image_name=file.filename, prediction=predicted_breed, image_data=img_io.read())
         
         return jsonify({'image_name': file.filename, 'prediction': formatted_breed})
 
@@ -87,6 +92,89 @@ def history():
         return jsonify({'predictions': predictions})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    
+
+@app.route('/auto-feedback', methods=['POST'])
+def auto_feedback():
+    results = []
+    correct_predictions = 0
+    total_predictions = 0    
+    
+    upload_path = os.getenv('UPLOAD_PATH')
+    for filename in os.listdir(upload_path):
+        if filename.endswith(".jpeg") or filename.endswith(".jpg") or filename.endswith(".png"):
+            file_path = os.path.join(upload_path, filename)
+            
+            img = Image.open(file_path).convert('RGB').resize((224, 224))
+            img_array = np.array(img) / 255.0
+            img_array = img_array.reshape(1, 224, 224, 3)
+
+            prediction = model.predict(img_array)
+            predict_class = np.argmax(prediction, axis=1)[0]
+            predicted_breed = labels[predict_class]
+
+            original_label_match = re.match(r"([a-zA-Z_]+)", filename)
+            if original_label_match:
+                original_label = original_label_match.group(1).lower()
+            else:
+                original_label = filename.split(".")[0].lower()
+
+            formatted_original_label = original_label.replace('_', ' ').lower()
+            predicted_breed_name = predicted_breed.split("-")[1].replace('_', ' ').lower()
+            
+            print(f"Original Label: {formatted_original_label}")
+            print(f"Predicted Breed: {predicted_breed_name}")
+            
+            is_correct = (predicted_breed_name.lower() == formatted_original_label.lower())
+            total_predictions += 1
+            
+            if is_correct:
+                correct_predictions += 1
+
+            if not is_correct:
+                matching_label = None
+                for label in labels:
+                    formatted_label = label.split("-")[1].replace('_', ' ').lower()
+                    if formatted_label == formatted_original_label:
+                        matching_label = label
+                        break
+
+                if matching_label:
+                    true_label = matching_label
+                else:
+                    true_label = None
+            else:
+                true_label = None
+
+            img_io = io.BytesIO()
+            img.save(img_io, format='JPEG')
+            img_io.seek(0)
+
+            save_prediction(image_name=filename, prediction=predicted_breed, image_data=img_io.read(), is_correct=is_correct, true_label=true_label)
+            
+            results.append({
+                'image_name': filename,
+                'predicted_breed': predicted_breed,
+                'is_correct': is_correct,
+                'true_label': true_label
+            })
+            
+    if total_predictions > 0:
+        accuracy = (correct_predictions / total_predictions) * 100
+    else:
+        accuracy = 0.0
+        
+    summary = {
+        'total_predictions': total_predictions,
+        'correct_predictions': correct_predictions,
+        'accuracy': accuracy
+    }
+    
+    print(f"Total Predictions: {total_predictions}")
+    print(f"Correct Predictions: {correct_predictions}")
+    print(f"Total Accuracy: {accuracy}")
+    
+    return jsonify({ 'results': results, 'summary': summary })
 
 
 if __name__ == '__main__':
