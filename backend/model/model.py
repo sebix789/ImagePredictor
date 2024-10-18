@@ -67,7 +67,6 @@ def load_data():
     return train_data, test_data
 
 
-# Fine-Tunning for transfer learning
 def fine_tunning(model, train_data, test_data):
     
     weights_file_path = '/kaggle/working/weights.keras'
@@ -75,10 +74,10 @@ def fine_tunning(model, train_data, test_data):
     base_model = model.layers[0]
     base_model.trainable = True
     
-    for layer in base_model.layers[-20:]:
+    for layer in base_model.layers[-50:]:
         layer.trainable = True
         
-    optimizer = tf.keras.optimizers.Nadam(learning_rate=1e-5)
+    optimizer = tf.keras.optimizers.Adam(learning_rate=1e-5)
     model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
     
     # Callbacks
@@ -87,7 +86,7 @@ def fine_tunning(model, train_data, test_data):
     lr_scheduler = tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=3, min_lr=1e-7)
     
     fine_tune_history = model.fit(
-        train_data, epochs=30, 
+        train_data, epochs=50, 
         validation_data=test_data, 
         callbacks=[early_stopping, model_checkpoint, lr_scheduler]
     )
@@ -98,17 +97,17 @@ def fine_tunning(model, train_data, test_data):
 def train_model(): 
     train_data, test_data = load_data()
     
-    # model_load_path = '/kaggle/input/breed-model-with-weights/classification_sequential_model.keras'
-    # weights_load_path = '/kaggle/input/breed-model-with-weights/weights.keras'
+    model_load_path = '/kaggle/input/classification-with-inceptionv3/classification_sequential_model.keras'
+    weights_load_path = '/kaggle/input/classification-with-inceptionv3/weights.keras'
     
     model_file_path = '/kaggle/working/classification_sequential_model.keras'
     weights_file_path = '/kaggle/working/weights.keras'
 
     # Load or build the model
-    if os.path.exists(model_file_path):
+    if os.path.exists(model_load_path):
         print("Loading existing model...")
-        model = tf.keras.models.load_model(weights_file_path)
-        optimizer = tf.keras.optimizers.Nadam(learning_rate=0.001)
+        model = tf.keras.models.load_model(weights_load_path)
+        optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
         model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
     else:
         print("Building new model...")
@@ -123,7 +122,7 @@ def train_model():
         
     
     # Compile model
-    optimizer = tf.keras.optimizers.Nadam(learning_rate=0.001)
+    optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
     model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
     
     # Callbacks
@@ -133,7 +132,7 @@ def train_model():
 
     # Train the model
     history = model.fit(
-        train_data, epochs=15, 
+        train_data, epochs=10, 
         validation_data=test_data, 
         callbacks=[early_stopping, model_checkpoint, lr_scheduler]
     )
