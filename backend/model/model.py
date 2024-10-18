@@ -152,7 +152,7 @@ def train_model():
 
 
 def load_model():   
-    model_path = os.path.join(os.path.dirname(__file__), 'classification_sequential_model.keras')
+    model_path = os.path.join(os.path.dirname(__file__), 'updated_model.keras')
     if not os.path.exists(model_path):
         raise FileNotFoundError(f"The model file {model_path} does not exist.")
     
