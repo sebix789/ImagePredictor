@@ -100,7 +100,7 @@ def auto_feedback():
     correct_predictions = 0
     total_predictions = 0    
     
-    upload_path = os.getenv('UPLOAD_PATH')
+    upload_path = os.getenv('DATA_PATH')
     for filename in os.listdir(upload_path):
         if filename.endswith(".jpeg") or filename.endswith(".jpg") or filename.endswith(".png"):
             file_path = os.path.join(upload_path, filename)
@@ -113,19 +113,19 @@ def auto_feedback():
             predict_class = np.argmax(prediction, axis=1)[0]
             predicted_breed = labels[predict_class]
 
-            original_label_match = re.match(r"([a-zA-Z_]+)", filename)
-            if original_label_match:
-                original_label = original_label_match.group(1).lower()
+            file_label_match = re.match(r"n\d{8}-(.+)", filename)
+            if file_label_match:
+                file_label = file_label_match.group(1).lower()
             else:
-                original_label = filename.split(".")[0].lower()
+                file_label = re.sub(r'\d+\.(jpeg|jpg|png)$', '', filename).lower()
 
-            formatted_original_label = original_label.replace('_', ' ').lower()
-            predicted_breed_name = predicted_breed.split("-")[1].replace('_', ' ').lower()
-            
-            print(f"Original Label: {formatted_original_label}")
+            formatted_file_label = file_label.replace('-', '_').lower()
+            predicted_breed_name = format_breeds(predicted_breed)
+        
+            print(f"File Label: {formatted_file_label}")
             print(f"Predicted Breed: {predicted_breed_name}")
             
-            is_correct = (predicted_breed_name.lower() == formatted_original_label.lower())
+            is_correct = (predicted_breed_name == formatted_file_label)
             total_predictions += 1
             
             if is_correct:
@@ -134,8 +134,8 @@ def auto_feedback():
             if not is_correct:
                 matching_label = None
                 for label in labels:
-                    formatted_label = label.split("-")[1].replace('_', ' ').lower()
-                    if formatted_label == formatted_original_label:
+                    formatted_label = format_breeds(label)
+                    if formatted_label == formatted_file_label:
                         matching_label = label
                         break
 
@@ -143,6 +143,8 @@ def auto_feedback():
                     true_label = matching_label
                 else:
                     true_label = None
+
+                print(f"True Label: {true_label}")
             else:
                 true_label = None
 
