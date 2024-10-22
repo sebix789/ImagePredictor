@@ -21,7 +21,7 @@ const AutoFeedback: React.FC = () => {
     setStatus('Processing...');
 
     try {
-      const res = await axios.post('http://127.0.0.1:5000/auto-feedback');
+      const res = await axios.post(`${process.env.API_URL}/auto-feedback`);
       if (res.status === 200) {
         toast.success('All images submitted', {
           position: 'top-right',

@@ -3,6 +3,7 @@ import tensorflow_datasets as tfds
 import matplotlib.pyplot as plt
 import os
 import random
+from dotenv import load_dotenv
 
 
 # Build the model
@@ -69,7 +70,7 @@ def load_data():
 
 def fine_tunning(model, train_data, test_data):
     
-    weights_file_path = '/kaggle/working/weights.keras'
+    weights_file_path = os.getenv('KAGGLE_WEIGHTS_OUTPUT')
     
     base_model = model.layers[0]
     base_model.trainable = True
@@ -97,11 +98,11 @@ def fine_tunning(model, train_data, test_data):
 def train_model(): 
     train_data, test_data = load_data()
     
-    model_load_path = '/kaggle/input/classification-with-inceptionv3/classification_sequential_model.keras'
-    weights_load_path = '/kaggle/input/classification-with-inceptionv3/weights.keras'
+    model_load_path = os.getenv('KAGGLE_MODEL_LOAD')
+    weights_load_path = os.getenv('KAGGLE_WEIGHTS_LOAD')
     
-    model_file_path = '/kaggle/working/classification_sequential_model.keras'
-    weights_file_path = '/kaggle/working/weights.keras'
+    model_file_path = os.getenv('KAGGLE_MODEL_PATH')
+    weights_file_path = os.getenv('KAGGLE_WEIGTHS_PATH')
 
     # Load or build the model
     if os.path.exists(model_load_path):
@@ -151,7 +152,7 @@ def train_model():
 
 
 def load_model():   
-    model_path = os.path.join(os.path.dirname(__file__), 'updated_model.keras')
+    model_path = os.getenv('MODEL_CURRENT')
     if not os.path.exists(model_path):
         raise FileNotFoundError(f"The model file {model_path} does not exist.")
     

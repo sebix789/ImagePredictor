@@ -23,7 +23,7 @@ const Feedback: React.FC<FeedbackProps> = ({ imageName, prediction }) => {
   useEffect(() => {
     const fetchLabels = async () => {
       try {
-        const res = await axios.get('http://127.0.0.1:5000/labels');
+        const res = await axios.get(`${process.env.API_URL}/labels`);
         const original = res.data.labels;
         const formatted = res.data.formatted_labels;
 
@@ -63,7 +63,7 @@ const Feedback: React.FC<FeedbackProps> = ({ imageName, prediction }) => {
     }
 
     try {
-      await axios.post('http://127.0.0.1:5000/feedback', {
+      await axios.post(`${process.env.API_URL}/feedback`, {
         image_name: imageName,
         is_correct: isCorrect,
         true_label: !isCorrect ? selectedLabel : null,

@@ -27,7 +27,7 @@ const FileUpload: React.FC = () => {
     formData.append('file', selectedFile);
 
     try {
-      const res = await axios.post('http://127.0.0.1:5000/predict', formData);
+      const res = await axios.post(`${process.env.API_URL}predict`, formData);
       setPrediction(res.data.prediction);
       setLoading(false);
     } catch (error: any) {
